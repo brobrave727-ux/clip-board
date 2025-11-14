@@ -2,21 +2,22 @@ import streamlit as st
 import firebase_admin
 from firebase_admin import credentials, db
 import streamlit.components.v1 as components
+import os
 
 st.set_page_config(page_title="Shared Clipboard", layout="wide")
 
-# ---------------- FIREBASE LOAD FROM SECRETS ----------------
+# ---------------- FIREBASE LOAD FROM RENDER ENV VARIABLES ----------------
 firebase_config = {
-    "type": st.secrets["FIREBASE"]["type"],
-    "project_id": st.secrets["FIREBASE"]["project_id"],
-    "private_key_id": st.secrets["FIREBASE"]["private_key_id"],
-    "private_key": st.secrets["FIREBASE"]["private_key"],
-    "client_email": st.secrets["FIREBASE"]["client_email"],
-    "client_id": st.secrets["FIREBASE"]["client_id"],
-    "auth_uri": st.secrets["FIREBASE"]["auth_uri"],
-    "token_uri": st.secrets["FIREBASE"]["token_uri"],
-    "auth_provider_x509_cert_url": st.secrets["FIREBASE"]["auth_provider_x509_cert_url"],
-    "client_x509_cert_url": st.secrets["FIREBASE"]["client_x509_cert_url"],
+    "type": os.environ["FIREBASE_TYPE"],
+    "project_id": os.environ["FIREBASE_PROJECT_ID"],
+    "private_key_id": os.environ["FIREBASE_PRIVATE_KEY_ID"],
+    "private_key": os.environ["FIREBASE_PRIVATE_KEY"].replace("\\n", "\n"),
+    "client_email": os.environ["FIREBASE_CLIENT_EMAIL"],
+    "client_id": os.environ["FIREBASE_CLIENT_ID"],
+    "auth_uri": os.environ["FIREBASE_AUTH_URI"],
+    "token_uri": os.environ["FIREBASE_TOKEN_URI"],
+    "auth_provider_x509_cert_url": os.environ["FIREBASE_AUTH_PROVIDER"],
+    "client_x509_cert_url": os.environ["FIREBASE_CLIENT_CERT"],
 }
 
 cred = credentials.Certificate(firebase_config)
@@ -28,10 +29,10 @@ if not firebase_admin._apps:
 
 ref = db.reference("sharedClipboard")
 
-# ---------------- FETCH DATA ----------------
+# ---------------- FETCH EXISTING DATA ----------------
 data = ref.get() or {"q1": "", "q2": "", "q3": "", "q4": ""}
 
-# ---------------- COPY FUNCTION ----------------
+# ---------------- JS COPY TO CLIPBOARD ----------------
 def copy_clip(text):
     components.html(
         f"""
@@ -43,14 +44,14 @@ def copy_clip(text):
             document.execCommand('copy');
             document.body.removeChild(el);
         </script>
-        """,
-        height=0,
+        """, height=0
     )
 
-# ---------------- UI ----------------
+# ---------------- UI HEADER ----------------
 st.title("📋 Shared Clipboard (4 Questions Sync)")
+st.write("Paste code → Save → Copy → Clear")
 
-# ---------------- COPY ALL ----------------
+# ---------------- COPY ALL TOP BUTTON ----------------
 st.subheader("Copy ALL Questions")
 
 all_codes = f"""
@@ -73,7 +74,7 @@ if st.button("COPY ALL (TOP)"):
 
 st.write("---")
 
-# ---------------- QUESTION BLOCK ----------------
+# ---------------- QUESTION BLOCK FUNCTION ----------------
 def question_block(title, key, value):
     st.write(f"### {title}")
 
@@ -99,8 +100,7 @@ def question_block(title, key, value):
 
     st.write("---")
 
-
-# ---------------- 4 QUESTIONS ----------------
+# ---------------- RENDER 4 QUESTIONS ----------------
 question_block("Question 1", "q1", data["q1"])
 question_block("Question 2", "q2", data["q2"])
 question_block("Question 3", "q3", data["q3"])
